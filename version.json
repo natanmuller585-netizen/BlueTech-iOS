@@ -1,0 +1,22 @@
+{
+    "app_name":  "BlueTech",
+    "version":  "0.1.1",
+    "build":  2,
+    "minimum_version":  "0.1.0",
+    "release_date":  "2026-11-25",
+    "update_available":  true,
+    "download_url":  "https://github.com/natanmuller585-netizen/BlueTech-iOS/releases/tag/v0.1.1",
+    "release_notes":  [
+                          "Corrige o erro de pareamento no iPhone (frame maior que o limite BLE).",
+                          "Aviso de nova versao ao abrir o app, com opcao de atualizar depois.",
+                          "Android baixa e abre o APK; iPhone abre a pagina oficial da Release.",
+                          "Historico de versoes e checagem manual em Configuracoes."
+                      ],
+    "mandatory_update":  false,
+    "ipa_sha256":  "b22a4be78eb5fa8394fe6bac5566c3043fd4ddd30e128d6ef945897ee856d76d",
+    "android":  {
+                    "url":  "https://github.com/natanmuller585-netizen/BlueTech-iOS/releases/download/v0.1.1/Bluetech-Android.apk",
+                    "size":  86109992,
+                    "sha256":  "435b64bed8987dac3f3a8219895f3fdb8993df12d71bc124cff9cfa5ac33e7bc"
+                }
+}
