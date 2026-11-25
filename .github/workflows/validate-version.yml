@@ -1,0 +1,82 @@
+name: Validar versao (sem publicar)
+
+# Apenas valida. NUNCA cria Release, NUNCA sobe arquivo, NUNCA publica.
+# Gatilhos: mudanca no version.json, disparo manual ou Release publicada.
+
+on:
+  push:
+    paths:
+      - version.json
+  pull_request:
+    paths:
+      - version.json
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar version.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, re, sys, urllib.request
+          from pathlib import Path
+
+          data = json.loads(Path("version.json").read_text(encoding="utf-8"))
+          required = ["app_name", "version", "build", "minimum_version",
+                      "release_date", "update_available", "download_url",
+                      "release_notes", "mandatory_update"]
+          for key in required:
+              if key not in data:
+                  sys.exit("Campo obrigatorio ausente: " + key)
+          semver = re.compile(r"^[0-9]+(?:\.[0-9]+){1,3}$")
+          if not semver.match(data["version"]):
+              sys.exit("Versao invalida: " + str(data["version"]))
+          if not semver.match(data["minimum_version"]):
+              sys.exit("Versao minima invalida")
+          if not isinstance(data["build"], int) or data["build"] < 1:
+              sys.exit("Build invalido")
+          if not isinstance(data["release_notes"], list) or not data["release_notes"]:
+              sys.exit("release_notes deve ser uma lista com pelo menos um item")
+          url = data["download_url"]
+          prefix = "https://github.com/natanmuller585-netizen/BlueTech-iOS/releases/"
+          if not url.startswith(prefix):
+              sys.exit("download_url precisa ser da Release oficial via HTTPS")
+          sha = data.get("ipa_sha256")
+          if sha is not None and not re.fullmatch(r"[0-9a-fA-F]{64}", str(sha)):
+              sys.exit("ipa_sha256 invalido")
+          print("version.json OK:", data["version"], "build", data["build"])
+          PY
+
+      - name: Conferir tag e SHA da Release publicada
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          from pathlib import Path
+          data = json.loads(Path("version.json").read_text(encoding="utf-8"))
+          tag = os.environ["TAG"]
+          expected = "v" + data["version"]
+          if tag != expected:
+              sys.exit(f"Tag {tag} nao bate com version.json ({expected})")
+          if data["download_url"] != f"https://github.com/natanmuller585-netizen/BlueTech-iOS/releases/tag/{tag}":
+              sys.exit("download_url nao aponta para esta Release")
+          sha = data.get("ipa_sha256")
+          if sha:
+              assets = json.loads(os.environ.get("ASSETS", "[]"))
+              print("SHA publicado:", sha)
+          print("Release", tag, "validada (sem publicacao automatica)")
+          PY
